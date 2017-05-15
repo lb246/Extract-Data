@@ -1,0 +1,115 @@
+dir = getDirectory("Choose Source Directory "); 
+mouse=getString("Which mouse?","Prismus");
+id=getNumber("Which recording id?",2);
+sess=getNumber("How many Sessions?",6);
+
+
+Q=getNumber("Slice number smaller(1)/greater(2) than 130?",2);
+  if (Q>1){
+    w=2;
+  }else{
+    w=1;
+  }
+
+for (itt=1; itt<=w; itt++){
+for (i = 1; i <= sess; i++) {
+   open(dir+"SNStack"+mouse+"-I"+id+"-Tom-S"+i+".tif");
+    if (itt<2){
+      run("Z Project...", "start=10 stop=60 projection=[Max Intensity]");
+      tn=getTitle();
+      rename(mouse+"-I"+id+"."+itt+"-Tom-S"+i+".tif");
+    }else{
+      run("Z Project...", "start=80 stop=130 projection=[Max Intensity]");
+      tn=getTitle();
+      rename(mouse+"-I"+id+"."+itt+"-Tom-S"+i+".tif");
+    }
+   selectWindow("SNStack"+mouse+"-I"+id+"-Tom-S"+i+".tif");
+   close();
+   setTool("multipoint");
+   waitForUser("Please select center points of a few interneurons. Click OK when done");
+   roiManager("Add");  
+}
+
+Tomname=mouse+"-I"+id+"."+itt+"-Tom-S1.tif";
+
+
+for (i = 2; i <= sess; i++) {
+	open(dir+"SNStack"+mouse+"-I"+id+"-GFP-S"+i+".tif");
+            if (itt<2){
+               run("Z Project...", "start=10 stop=60 projection=[Max Intensity]");
+               rename("Prjct"+mouse+"-I"+id+"."+itt+"-GFP-S"+i+".tif");
+            }else{
+               run("Z Project...", "start=80 stop=130 projection=[Max Intensity]");
+               rename("Prjct"+mouse+"-I"+id+"."+itt+"-GFP-S"+i+".tif");
+            }
+             selectWindow("SNStack"+mouse+"-I"+id+"-GFP-S"+i+".tif");
+            close();
+            selectWindow("Prjct"+mouse+"-I"+id+"."+itt+"-GFP-S"+i+".tif");
+	roiManager("Select",i-1);
+	GFPname="Prjct"+mouse+"-I"+id+"."+itt+"-GFP-S"+i+".tif";
+	run("Landmark Correspondences", "source_image=[GFPname] template_image=[Tomname] transformation_method=[Least Squares] alpha=1 mesh_resolution=32 transformation_class=Rigid interpolate");
+	selectWindow(mouse+"-I"+id+"."+itt+"-Tom-S"+i+".tif");
+	close();
+}
+
+
+array1 = newArray("0");;
+for (i=1;i<roiManager("count");i++){
+        array1 = Array.concat(array1,i);
+        //Array.print(array1);
+}
+roiManager("select", array1); 
+roiManager("Delete");
+
+
+setTool("rectangle");
+waitForUser("Please create a composite and select the overlap in a rectangle. Click OK when done");
+roiManager("Add");
+close();
+//selectWindow("Composite");
+//close();
+selectWindow(mouse+"-I"+id+"."+itt+"-Tom-S1.tif");
+roiManager("Select",0);
+run("Crop");
+
+
+//dir = getDirectory("Choose Source Directory "); 
+saveAs("Tiff", dir+Tomname);
+close();
+
+for (i=2; i<=sess; i++) {
+     GFPname="TransformedPrjct"+mouse+"-I"+id+"."+itt+"-GFP-S"+i+".tif";
+      selectWindow(GFPname);
+     roiManager("Select",0);
+     run("Crop");
+    //setBackgroundColor(0, 0, 0);
+    //run("Clear Outside");
+    savename=mouse+"-I"+id+"."+itt+"-GFP-S"+i+".tif";
+    saveAs("Tiff", dir+savename);
+    close();
+    selectWindow("Prjct"+mouse+"-I"+id+"."+itt+"-GFP-S"+i+".tif");
+   close();
+
+}
+
+open(dir+"SNStack"+mouse+"-I"+id+"-GFP-S1.tif");
+            if (itt<2){
+               run("Z Project...", "start=10 stop=60 projection=[Max Intensity]");
+               rename("Prjct"+mouse+"-I"+id+"."+itt+"-GFP-S1.tif");
+            }else{
+               run("Z Project...", "start=80 stop=130 projection=[Max Intensity]");
+               rename("Prjct"+mouse+"-I"+id+"."+itt+"-GFP-S1.tif");
+            }
+             selectWindow("SNStack"+mouse+"-I"+id+"-GFP-S1.tif");
+            close();
+GFPname="Prjct"+mouse+"-I"+id+"."+itt+"-GFP-S1.tif";
+selectWindow(GFPname);
+roiManager("Select",0);
+run("Crop");
+savename=mouse+"-I"+id+"."+itt+"-GFP-S1.tif";
+saveAs("Tiff", dir+savename);
+close();
+
+roiManager("Select",0);
+roiManager("Delete");
+}
